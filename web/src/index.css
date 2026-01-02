@@ -3,6 +3,10 @@
 @theme {
   --font-inter: 'Inter', sans-serif;
   --font-open-sans: 'Open Sans', sans-serif;
+  
+  /* Cor customizada */
+  --color-blue-base: #2C46B1;
+  --color-blue-base-hover: #1e3280;
 }
 
 body {
@@ -15,4 +19,13 @@ body {
 
 .font-open-sans {
   font-family: var(--font-open-sans);
+}
+
+/* Fallback caso o Tailwind v4 não reconheça */
+.bg-blue-base {
+  background-color: #2C46B1;
+}
+
+.hover\:bg-blue-base-hover:hover {
+  background-color: #1e3280;
 }
