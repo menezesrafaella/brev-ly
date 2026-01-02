@@ -1,10 +1,14 @@
-import type { Link } from '../types'
+import Copy from '../assets/Copy.svg'
+import Download from '../assets/Download.svg'
+import Trash from '../assets/Trash.svg'
 
+import type { Link } from '../types'
 interface MyLinksProps {
   links: Link[]
+  onDeleteLink: (id: string) => void
 }
 
-export default function Links({ links }: MyLinksProps) {
+export default function Links({ links, onDeleteLink }: MyLinksProps) {
   const handleLinkClick = (link: Link) => {
     const originalUrl = link.original.startsWith('http') 
       ? link.original 
@@ -14,13 +18,22 @@ export default function Links({ links }: MyLinksProps) {
     window.open(redirectUrl, '_blank')
   }
 
-  const downloadCSV = () => {
-    if (links.length === 0) return
+  const handleCopyLink = async (link: Link) => {
+    try {
+      await navigator.clipboard.writeText(link.shortened)
+    } catch (err) {
+      console.error('Erro ao copiar link:', err)
+    }
+  }
 
-    const headers = ['Link Original', 'Link Encurtado']
+  const downloadCSV = () => {
+    if (links?.length === 0) return
+
+    const headers = ['Link Original', 'Link Encurtado', 'Acessos']
     const rows = links.map(link => [
       link.original,
-      link.shortened
+      link.shortened,
+      link.accessCount.toString()
     ])
 
     const csvContent = [
@@ -44,30 +57,18 @@ export default function Links({ links }: MyLinksProps) {
     <div className="bg-white rounded-lg shadow-md p-6 flex flex-col">
       <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-6 flex-shrink-0">
         <h2 className="text-xl font-bold text-gray-800">Meus links</h2>
-        {links.length > 0 && (
+        {links?.length > 0 && (
           <button
             onClick={downloadCSV}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
           >
-            <svg
-              className="w-2 h-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
+            <img src={Download} alt="Baixar CSV" height={16}/>
             Baixar CSV
           </button>
         )}
       </div>
 
-      {links.length === 0 ? (
+      {links?.length === 0 ? (
         <div 
           className="flex flex-col items-center justify-center flex-1 h-[234px]"
         >
@@ -97,20 +98,36 @@ export default function Links({ links }: MyLinksProps) {
               key={link.id}
               className="border border-gray-200 rounded-md p-4 hover:bg-gray-50 transition-colors duration-200"
             >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 mb-1">
-                    <span className="font-semibold">Original:</span> {link.original}
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => handleLinkClick(link)}
+                    className="text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-sm font-medium mb-1 block"
+                  >
+                    {link.shortened}
+                  </button>
+                  <p className="text-xs text-gray-500 truncate">
+                    {link.original}
                   </p>
-                  <p className="text-sm font-medium">
-                    <span className="font-semibold text-gray-600">shortened:</span>{' '}
-                    <button
-                      onClick={() => handleLinkClick(link)}
-                      className="text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
-                    >
-                      {link.shortened}
-                    </button>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <p className="text-xs text-gray-500 whitespace-nowrap">
+                    {link.accessCount} {link.accessCount === 1 ? 'acesso' : 'acessos'}
                   </p>
+                  <button
+                    onClick={() => handleCopyLink(link)}
+                    className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center transition-colors duration-200 cursor-pointer"
+                    title="Copiar link"
+                  >
+                    <img src={Copy} alt="Copiar link" height={16}/>
+                  </button>
+                  <button
+                    onClick={() => onDeleteLink(link.id)}
+                    className="w-8 h-8 bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors duration-200 cursor-pointer"
+                    title="Deletar link"
+                  >
+                    <img src={Trash} alt="Deletar link" height={16}/>
+                  </button>
                 </div>
               </div>
             </div>

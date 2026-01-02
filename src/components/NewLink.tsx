@@ -3,31 +3,66 @@ import type { Link } from '../types'
 
 interface NewLinkProps {
   onAddLink: (link: Link) => void
+  existingLinks: Link[]
 }
 
-export default function NewLink({ onAddLink }: NewLinkProps) {
+export default function NewLink({ onAddLink, existingLinks }: NewLinkProps) {
   const [linkOriginal, setLinkOriginal] = useState('')
   const [linkShortened, setLinkShortened] = useState('brev.ly/')
+  const [error, setError] = useState<string>('')
+
+  const validateShortened = (shortened: string): boolean => {
+    const code = shortened.replace(/^brev\.ly\//, '').trim()
+    
+    if (!code || code.length === 0) {
+      return false
+    }
+    
+    const validPattern = /^[a-zA-Z0-9_-]+$/
+    return validPattern.test(code)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     
     if (!linkOriginal.trim() || !linkShortened.trim()) {
+      setError('Preencha todos os campos')
+      return
+    }
+
+    if (!validateShortened(linkShortened)) {
+      setError('O link encurtado deve conter apenas letras, números, hífens e underscores')
+      return
+    }
+
+    const normalizedShortened = linkShortened.startsWith('brev.ly/') 
+      ? linkShortened 
+      : `brev.ly/${linkShortened.replace(/^brev\.ly\//, '')}`
+
+    const shortenedCode = normalizedShortened.replace(/^brev\.ly\//, '')
+    const exists = existingLinks.some(link => {
+      const existingCode = link.shortened.replace(/^brev\.ly\//, '')
+      return existingCode.toLowerCase() === shortenedCode.toLowerCase()
+    })
+
+    if (exists) {
+      setError('Este link encurtado já existe. Escolha outro.')
       return
     }
 
     const novoLink: Link = {
       id: Date.now().toString(),
-      original: linkOriginal,
-        shortened: linkShortened.startsWith('brev.ly/') 
-        ? linkShortened 
-        : `brev.ly/${linkShortened}`,
+      original: linkOriginal.trim(),
+      shortened: normalizedShortened,
+      accessCount: 0,
     }
 
     onAddLink(novoLink)
     
     setLinkOriginal('')
     setLinkShortened('brev.ly/')
+    setError('')
   }
 
   return (
@@ -68,6 +103,12 @@ export default function NewLink({ onAddLink }: NewLinkProps) {
             placeholder="brev.ly/"
           />
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
 
         <button
           type="submit"

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Logo from './assets/Logo.svg'
-import NewLink from './components/Links'
-import Links from './components/NewLink'
+import Links from './components/Links'
+import NewLink from './components/NewLink'
 import NotFound from './components/NotFound'
 import Redirect from './components/Redirect'
 import type { Link } from './types'
@@ -9,19 +9,30 @@ import type { Link } from './types'
 export default function App() {
   const [links, setLinks] = useState<Link[]>([])
   
-  // Verifica se há um parâmetro de redirect na URL
   const urlParams = new URLSearchParams(window.location.search)
   const redirectParam = urlParams.get('redirect')
   const redirectUrl = redirectParam ? decodeURIComponent(redirectParam) : null
   
-  // Verifica se há um link encurtado sendo acessado (via pathname ou query param)
   const pathname = window.location.pathname
-  const linkParam = urlParams.get('link')
   const shortenedPath = pathname !== '/' && pathname !== '' ? pathname.slice(1) : null
-  const requestedShortened = linkParam || shortenedPath
 
   const addLink = (link: Link) => {
     setLinks([...links, link])
+  }
+
+  const deleteLink = (id: string) => {
+    setLinks(links.filter(link => link.id !== id))
+  }
+
+  const incrementAccessCount = (shortened: string) => {
+    setLinks(links.map(link => {
+      const linkCode = link.shortened.replace(/^brev\.ly\//, '')
+      const requestedCode = shortened.replace(/^brev\.ly\//, '')
+      if (linkCode.toLowerCase() === requestedCode.toLowerCase() || link.shortened === shortened) {
+        return { ...link, accessCount: link.accessCount + 1 }
+      }
+      return link
+    }))
   }
 
   const handleManualRedirect = () => {
@@ -30,18 +41,19 @@ export default function App() {
     }
   }
 
-  // Se há um link encurtado sendo acessado, verifica se existe
-  if (requestedShortened && !redirectUrl) {
+  if (shortenedPath && !redirectUrl) {
     const foundLink = links.find(link => {
-      const shortened = link.shortened.replace('brev.ly/', '').replace('brev.ly', '')
-      return shortened === requestedShortened || link.shortened === requestedShortened
+      const shortened = link.shortened.replace('brev.ly/', '').replace('brev.ly', '').trim()
+      return shortened.toLowerCase() === shortenedPath.toLowerCase() || 
+             link.shortened.toLowerCase() === shortenedPath.toLowerCase()
     })
     
     if (!foundLink) {
       return <NotFound />
     }
     
-    // Se encontrou o link, redireciona
+    incrementAccessCount(foundLink.shortened)
+    
     const originalUrl = foundLink.original.startsWith('http') 
       ? foundLink.original 
       : `https://${foundLink.original}`
@@ -54,7 +66,6 @@ export default function App() {
     )
   }
 
-  // Se há um parâmetro de redirect, mostra a página de redirect
   if (redirectUrl) {
     return (
       <Redirect 
@@ -73,8 +84,8 @@ export default function App() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
-        <Links onAddLink={addLink} />
-        <NewLink links={links} />
+        <NewLink onAddLink={addLink} existingLinks={links} />
+        <Links links={links} onDeleteLink={deleteLink} />
       </div>
     </div>
   )
