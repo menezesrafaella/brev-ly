@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import Icon from '../assets/Logo_Icon.svg'
 
 interface RedirectProps {
@@ -6,6 +7,20 @@ interface RedirectProps {
 }
 
 export default function Redirect({ redirectUrl, onManualRedirect }: RedirectProps) {
+  useEffect(() => {
+    // Redireciona automaticamente após 2 segundos
+    const timer = setTimeout(() => {
+      if (onManualRedirect) {
+        onManualRedirect()
+      } else if (redirectUrl) {
+        window.location.href = redirectUrl
+      }
+    }, 2000)
+
+    // Limpa o timer se o componente for desmontado
+    return () => clearTimeout(timer)
+  }, [redirectUrl, onManualRedirect])
+
   const handleManualRedirect = () => {
     if (onManualRedirect) {
       onManualRedirect()
@@ -30,7 +45,7 @@ export default function Redirect({ redirectUrl, onManualRedirect }: RedirectProp
         </p>
 
         <p className="text-gray-700">
-          Não foi redirecionado?
+          Não foi redirecionado?{' '}
           <button
             onClick={handleManualRedirect}
             className="text-blue-600 hover:text-blue-700 underline font-medium"
