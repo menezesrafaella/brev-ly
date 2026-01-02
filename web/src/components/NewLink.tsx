@@ -1,12 +1,14 @@
 import { useState } from 'react'
+import { api } from '../services/api'
 import type { Link } from '../types'
 
 interface NewLinkProps {
   onAddLink: (link: Link) => void
   existingLinks: Link[]
+  onLinkCreated?: () => void
 }
 
-export default function NewLink({ onAddLink, existingLinks }: NewLinkProps) {
+export default function NewLink({ onAddLink, existingLinks, onLinkCreated }: NewLinkProps) {
   const [linkOriginal, setLinkOriginal] = useState('')
   const [linkShortened, setLinkShortened] = useState('brev.ly/')
   const [error, setError] = useState<string>('')
@@ -22,7 +24,7 @@ export default function NewLink({ onAddLink, existingLinks }: NewLinkProps) {
     return validPattern.test(code)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     
@@ -51,18 +53,50 @@ export default function NewLink({ onAddLink, existingLinks }: NewLinkProps) {
       return
     }
 
-    const novoLink: Link = {
-      id: Date.now().toString(),
-      original: linkOriginal.trim(),
-      shortened: normalizedShortened,
-      accessCount: 0,
-    }
+    try {
+      const originalUrl = linkOriginal.trim().startsWith('http') 
+        ? linkOriginal.trim() 
+        : `https://${linkOriginal.trim()}`
 
-    onAddLink(novoLink)
-    
-    setLinkOriginal('')
-    setLinkShortened('brev.ly/')
-    setError('')
+      const response = await api.createLink({
+        originalUrl,
+        shortenedUrl: normalizedShortened,
+      })
+
+      const novoLink: Link = {
+        id: response.id,
+        original: response.originalUrl,
+        shortened: `brev.ly/${response.shortenedUrl}`,
+        accessCount: response.accessCount,
+      }
+
+      onAddLink(novoLink)
+      
+      if (onLinkCreated) {
+        onLinkCreated()
+      }
+      
+      setLinkOriginal('')
+      setLinkShortened('brev.ly/')
+      setError('')
+    } catch (error) {
+      if (error instanceof Error) {
+        if ('status' in error) {
+          const apiError = error as { status: number; message: string }
+          if (apiError.status === 409) {
+            setError('Este link encurtado já existe. Escolha outro.')
+          } else if (apiError.status === 400) {
+            setError(apiError.message || 'Dados inválidos. Verifique os campos.')
+          } else {
+            setError('Erro ao criar link. Tente novamente.')
+          }
+        } else {
+          setError(error.message || 'Erro ao criar link. Tente novamente.')
+        }
+      } else {
+        setError('Erro ao criar link. Tente novamente.')
+      }
+    }
   }
 
   return (

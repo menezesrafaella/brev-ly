@@ -1,14 +1,16 @@
 import Copy from '../assets/Copy.svg'
 import Download from '../assets/Download.svg'
 import Trash from '../assets/Trash.svg'
-
+import { api } from '../services/api'
 import type { Link } from '../types'
+
 interface MyLinksProps {
   links: Link[]
-  onDeleteLink: (id: string) => void
+  onDeleteLink: (shortenedUrl: string) => void
+  onLinkDeleted?: () => void
 }
 
-export default function Links({ links, onDeleteLink }: MyLinksProps) {
+export default function Links({ links, onDeleteLink, onLinkDeleted }: MyLinksProps) {
   const handleLinkClick = (link: Link) => {
     const originalUrl = link.original.startsWith('http') 
       ? link.original 
@@ -26,31 +28,39 @@ export default function Links({ links, onDeleteLink }: MyLinksProps) {
     }
   }
 
-  const downloadCSV = () => {
+  const downloadCSV = async () => {
     if (links?.length === 0) return
 
-    const headers = ['Link Original', 'Link Encurtado', 'Acessos']
-    const rows = links.map(link => [
-      link.original,
-      link.shortened,
-      link.accessCount.toString()
-    ])
+    try {
+      const response = await api.exportLinks()
+      // Abre o CSV da CDN em nova aba
+      window.open(response.reportUrl, '_blank')
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error)
+      // Fallback: gera CSV localmente se a API falhar
+      const headers = ['Link Original', 'Link Encurtado', 'Acessos']
+      const rows = links.map(link => [
+        link.original,
+        link.shortened,
+        link.accessCount.toString()
+      ])
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n')
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n')
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    
-    link.setAttribute('href', url)
-    link.setAttribute('download', 'meus-links.csv')
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      
+      link.setAttribute('href', url)
+      link.setAttribute('download', 'meus-links.csv')
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
 
   return (
@@ -122,7 +132,17 @@ export default function Links({ links, onDeleteLink }: MyLinksProps) {
                     <img src={Copy} alt="Copiar link" height={16}/>
                   </button>
                   <button
-                    onClick={() => onDeleteLink(link.id)}
+                    onClick={async () => {
+                      try {
+                        await onDeleteLink(link.shortened)
+                        if (onLinkDeleted) {
+                          onLinkDeleted()
+                        }
+                      } catch (error) {
+                        console.error('Erro ao deletar link:', error)
+                        alert('Erro ao deletar link. Tente novamente.')
+                      }
+                    }}
                     className="w-8 h-8 bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors duration-200 cursor-pointer"
                     title="Deletar link"
                   >
