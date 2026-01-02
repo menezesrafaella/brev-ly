@@ -146,7 +146,8 @@ export default function NewLink({ onAddLink, existingLinks, onLinkCreated }: New
 
         <button
           type="submit"
-          className="w-full bg-blue-base hover:bg-blue-base-hover text-white font-semibold py-3 px-4 rounded-md transition-colors duration-200"
+          disabled={!linkOriginal.trim()}
+          className="w-full bg-blue-base hover:bg-blue-base-hover text-white font-semibold py-3 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-base"
         >
           Salvar link
         </button>
