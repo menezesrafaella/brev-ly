@@ -9,3 +9,27 @@ services:
       - POSTGRES_DB=brevly
     volumes:
       - './docker:/docker-entrypoint-initdb.d'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docker -d brevly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://docker:docker@pg:5432/brevly
+      - CLOUFARE_ACCOUNT_ID=${CLOUFARE_ACCOUNT_ID}
+      - CLOUDFARE_ACCESS_KEY_ID=${CLOUDFARE_ACCESS_KEY_ID}
+      - CLOUDFARE_SECRET_KEY_ID=${CLOUDFARE_SECRET_KEY_ID}
+      - CLOUDFARE_BUCKET=${CLOUDFARE_BUCKET}
+      - CLOUDFARE_URL_BUCKET=${CLOUDFARE_URL_BUCKET}
+    depends_on:
+      pg:
+        condition: service_healthy

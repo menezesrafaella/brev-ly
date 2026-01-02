@@ -29,4 +29,4 @@ COPY --from=build /usr/src/app/package.json ./package.json
 
 EXPOSE 3000
 
-CMD ["dist/infras/http/server.js"]
+CMD ["dist/infra/http/server.js"]

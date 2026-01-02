@@ -97,7 +97,27 @@ O frontend estará disponível em `http://localhost:5173`
 
 - **Frontend**: 5173
 - **Backend**: 3000
-- **PostgreSQL**: 5433
+- **PostgreSQL**: 5433 (desenvolvimento) / 5432 (produção)
+
+### Imagem Docker disponível:
+```
+rafaellacarmo/brev-ly:v1
+```
+
+### Quick Start (Produção):
+
+```bash
+cd server
+
+# Configurar variáveis de ambiente
+cp .env.production.example .env
+# Edite o .env com suas credenciais
+
+# Subir aplicação + PostgreSQL
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**📖 Para instruções detalhadas de deploy, consulte [DEPLOY.md](DEPLOY.md)**
 
 ## 📄 Licença
 
